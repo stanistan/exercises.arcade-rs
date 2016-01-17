@@ -1,7 +1,9 @@
 extern crate sdl2;
 
-use sdl2::pixels::Color;
-use std::thread;
+mod events;
+
+use ::sdl2::pixels::Color;
+use ::events::Events;
 
 fn main() {
 
@@ -18,9 +20,19 @@ fn main() {
         .accelerated()
         .build().unwrap();
 
-    renderer.set_draw_color(Color::RGB(0, 0, 0));
-    renderer.clear();
-    renderer.present();
+    // events
+    let mut events = Events::new(sdl_context.event_pump().unwrap());
 
-    thread::sleep_ms(3000);
+    loop {
+        events.pump();
+
+        if events.quit || events.key_escape {
+            break;
+        }
+
+        renderer.set_draw_color(Color::RGB(0, 0, 0));
+        renderer.clear();
+        renderer.present();
+    }
+
 }
