@@ -2,3 +2,6 @@
 name = "arcade-rs"
 version = "0.1.0"
 authors = ["Stan Rozenraukh <stan@stanistan.com>"]
+
+[dependencies]
+sdl2 = "0.9"
