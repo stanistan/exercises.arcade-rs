@@ -1,12 +1,15 @@
 use ::phi::{Phi, View, ViewAction};
 use ::phi::data::{Rectangle};
 use ::phi::gfx::{Sprite, CopySprite};
+use ::views::shared::Background;
 use ::sdl2::pixels::Color;
 
+// Consts
 const FONT: &'static str = "assets/belligerent.ttf";
 
-type BoxAction = Box<Fn(&mut Phi) -> ViewAction>;
+// Types
 
+type BoxAction = Box<Fn(&mut Phi) -> ViewAction>;
 struct Action {
     /// The function which should be executed if the action
     /// is chosen.
@@ -21,6 +24,7 @@ struct Action {
 }
 
 impl Action {
+
     fn new(phi: &mut Phi, label: &'static str, func: BoxAction) -> Action {
         Action {
             func: func,
@@ -42,6 +46,9 @@ impl Action {
 pub struct MainMenuView {
     actions: Vec<Action>,
     selected: i8,
+    bg_back: Background,
+    bg_middle: Background,
+    bg_front: Background,
 }
 
 impl MainMenuView {
@@ -56,6 +63,23 @@ impl MainMenuView {
                 })),
             ],
             selected: 0,
+
+            bg_back: Background {
+                pos: 0.0,
+                vel: 20.0,
+                sprite: Sprite::load(&mut phi.renderer, "assets/starBG.png").unwrap(),
+            },
+            bg_middle: Background {
+                pos: 0.0,
+                vel: 40.0,
+                sprite: Sprite::load(&mut phi.renderer, "assets/starMG.png").unwrap(),
+            },
+            bg_front: Background {
+                pos: 0.0,
+                vel: 80.0,
+                sprite: Sprite::load(&mut phi.renderer, "assets/starFG.png").unwrap(),
+            },
+
         }
     }
 }
@@ -88,6 +112,11 @@ impl View for MainMenuView {
         // clear the screen
         phi.renderer.set_draw_color(Color::RGB(0, 0, 0));
         phi.renderer.clear();
+
+        // bgs
+        self.bg_back.render(&mut phi.renderer, elapsed);
+        self.bg_middle.render(&mut phi.renderer, elapsed);
+        self.bg_front.render(&mut phi.renderer, elapsed);
 
         let (win_w, win_h) = phi.output_size();
         let label_h = 50.0;
