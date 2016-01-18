@@ -3,10 +3,14 @@ use ::phi::data::{Rectangle};
 use ::phi::gfx::{Sprite, CopySprite};
 use ::sdl2::pixels::Color;
 
+const FONT: &'static str = "assets/belligerent.ttf";
+
+type BoxAction = Box<Fn(&mut Phi) -> ViewAction>;
+
 struct Action {
     /// The function which should be executed if the action
     /// is chosen.
-    func: Box<Fn(&mut Phi) -> ViewAction>,
+    func: BoxAction,
 
     /// The sprite which is rendered when the player does not focus
     /// on the label.
@@ -17,13 +21,22 @@ struct Action {
 }
 
 impl Action {
-    fn new(phi: &mut Phi, label: &'static str, func: Box<Fn(&mut Phi) -> ViewAction>) -> Action {
+    fn new(phi: &mut Phi, label: &'static str, func: BoxAction) -> Action {
         Action {
             func: func,
-            idle_sprite: phi.ttf_str_sprite(label, "assets/belligerent.ttf", 32, Color::RGB(220, 220, 220)).unwrap(),
-            hover_sprite: phi.ttf_str_sprite(label, "assets/belligerent.ttf", 38, Color::RGB(255, 255, 255)).unwrap(),
+            idle_sprite: Action::make_idle_sprite(phi, label),
+            hover_sprite: Action::make_hover_sprite(phi, label),
         }
     }
+
+    fn make_idle_sprite(phi: &mut Phi, label: &'static str) -> Sprite {
+        phi.ttf_str_sprite(label, FONT, 32, Color::RGB(220, 220, 220)).unwrap()
+    }
+
+    fn make_hover_sprite(phi: &mut Phi, label: &'static str) -> Sprite {
+        phi.ttf_str_sprite(label, FONT, 38, Color::RGB(255, 255, 255)).unwrap()
+    }
+
 }
 
 pub struct MainMenuView {
