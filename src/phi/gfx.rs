@@ -5,6 +5,13 @@ use ::std::rc::Rc;
 use ::sdl2::render::{Renderer, Texture};
 use ::sdl2_image::LoadTexture;
 
+/// Common inerface for rendering a graphical component
+/// to some given region of the window.
+pub trait Renderable {
+    fn render(&self, render: &mut Renderer, dest: Rectangle);
+}
+
+
 #[derive(Clone)]
 pub struct Sprite {
     tex: Rc<RefCell<Texture>>,
@@ -49,21 +56,16 @@ impl Sprite {
     pub fn size(&self) -> (f64, f64) {
         (self.src.w, self.src.h)
     }
+}
 
-    pub fn render(&self, renderer: &mut Renderer, dest: Rectangle) {
+impl Renderable for Sprite {
+    fn render(&self, renderer: &mut Renderer, dest: Rectangle) {
         renderer.copy(&mut self.tex.borrow_mut(), self.src.to_sdl(), dest.to_sdl());
     }
 }
 
-pub trait CopySprite {
-    fn copy_sprite(&mut self, sprite: &Sprite, dest: Rectangle);
-}
 
-impl <'window> CopySprite for Renderer<'window> {
-    fn copy_sprite(&mut self, sprite: &Sprite, dest: Rectangle) {
-        sprite.render(self, dest);
-    }
-}
+
 
 #[derive(Clone)]
 pub struct AnimatedSprite {
@@ -110,11 +112,26 @@ impl AnimatedSprite {
         }
     }
 
-    fn render(&self, renderer: &mut Renderer, dest: Rectangle) {
-        let current_frame =
-            (self.current_time / self.frame_delay) as usize % self.frames();
-        let sprite = &self.sprites[current_frame];
-        sprite.render(renderer, dest);
+    fn current_frame(&self) -> usize {
+        (self.current_time / self.frame_delay) as usize & self.frames()
     }
 
 }
+
+impl Renderable for AnimatedSprite {
+    fn render(&self, renderer: &mut Renderer, dest: Rectangle) {
+        let sprite = &self.sprites[self.current_frame()];
+        sprite.render(renderer, dest);
+    }
+}
+
+pub trait CopySprite<T> {
+    fn copy_sprite(&mut self, sprite: &T, dest: Rectangle);
+}
+
+impl <'window, T: Renderable> CopySprite<T> for Renderer<'window> {
+    fn copy_sprite(&mut self, sprite: &T, dest: Rectangle) {
+        sprite.render(self, dest);
+    }
+}
+

@@ -134,7 +134,7 @@ impl View for MainMenuView {
             };
 
             let (w, h) = sprite.size();
-            phi.renderer.copy_sprite(&sprite, Rectangle {
+            phi.renderer.copy_sprite(sprite, Rectangle {
                 x: (win_w - w) / 2.0,
                 y: (win_h - box_h + label_h - h) / 2.0 + label_h * i as f64,
                 w: w,
