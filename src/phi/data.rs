@@ -27,9 +27,7 @@ impl Rectangle {
     }
 
     pub fn moved(self, x: f64, y: f64) -> Rectangle {
-        Rectangle {
-            x: x, y: y, w: self.w, h: self.h
-        }
+        Rectangle { x: x, y: y, ..self }
     }
 
     pub fn moved_by(self, dx: f64, dy: f64) -> Rectangle {
