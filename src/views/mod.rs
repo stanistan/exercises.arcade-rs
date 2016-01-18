@@ -1,6 +1,9 @@
 use ::phi::{Phi, View, ViewAction};
 use ::phi::data::Rectangle;
+use ::std::path::Path;
 use ::sdl2::pixels::Color;
+use ::sdl2::render::{Texture, TextureQuery};
+use ::sdl2_image::LoadTexture;
 
 // Constants
 
@@ -11,6 +14,7 @@ const PLAYER_SPEED: f64 = 180.0;
 
 struct Ship {
     rect: Rectangle,
+    tex: Texture,
 }
 
 // View definition
@@ -21,11 +25,19 @@ pub struct ShipView {
 
 impl ShipView {
     pub fn new(phi: &mut Phi) -> ShipView {
+
+        let tex = phi.renderer.load_texture(Path::new("assets/spaceship.png")).unwrap();
+        let TextureQuery { width, height, .. } = tex.query();
+
         ShipView {
             player: Ship {
                 rect: Rectangle {
-                    x: 64.0, y: 64.0, w: 32.0, h: 32.0,
-                }
+                    x: 64.0,
+                    y: 64.0,
+                    w: width as f64,
+                    h: height as f64,
+                },
+                tex: tex,
             }
         }
     }
@@ -76,6 +88,10 @@ impl View for ShipView {
         // render scene
         phi.renderer.set_draw_color(Color::RGB(200, 200, 50));
         phi.renderer.fill_rect(self.player.rect.to_sdl().unwrap());
+
+        phi.renderer.copy(&mut self.player.tex,
+                          self.player.rect.moved(0.0, 0.0).to_sdl(),
+                          self.player.rect.to_sdl());
 
         ViewAction::None
     }
