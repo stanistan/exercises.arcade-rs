@@ -10,6 +10,9 @@ use ::sdl2_image::LoadTexture;
 /// Pixels traveled by the player's shpi every second, when moving.
 const PLAYER_SPEED: f64 = 180.0;
 
+const SHIP_W: f64 = 43.0;
+const SHIP_H: f64 = 39.9;
+
 // Data Types
 
 struct Ship {
@@ -25,19 +28,15 @@ pub struct ShipView {
 
 impl ShipView {
     pub fn new(phi: &mut Phi) -> ShipView {
-
-        let tex = phi.renderer.load_texture(Path::new("assets/spaceship.png")).unwrap();
-        let TextureQuery { width, height, .. } = tex.query();
-
         ShipView {
             player: Ship {
                 rect: Rectangle {
                     x: 64.0,
                     y: 64.0,
-                    w: width as f64,
-                    h: height as f64,
+                    w: SHIP_W,
+                    h: SHIP_H
                 },
-                tex: tex,
+                tex: phi.renderer.load_texture(Path::new("assets/spaceship.png")).unwrap(),
             }
         }
     }
@@ -90,7 +89,7 @@ impl View for ShipView {
         phi.renderer.fill_rect(self.player.rect.to_sdl().unwrap());
 
         phi.renderer.copy(&mut self.player.tex,
-                          self.player.rect.moved(0.0, 0.0).to_sdl(),
+                          self.player.rect.moved(SHIP_W * 0.0, SHIP_H * 1.0).to_sdl(),
                           self.player.rect.to_sdl());
 
         ViewAction::None
