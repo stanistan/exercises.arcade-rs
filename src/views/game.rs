@@ -22,6 +22,21 @@ const BULLET_SPEED: f64 = 240.0;
 const BULLET_W: f64 = 8.0;
 const BULLET_H: f64 = 4.0;
 
+trait Bullet {
+    /// Update the bullet.
+    /// If the bullet should be destroyed, e.g. because it has left the screen,
+    /// then returns `None`.
+    /// Otherwise, return `Some(update_bullet)`.
+    fn update(self: Box<Self>, phi: &mut Phi, dt: f64) -> Option<Box<Bullet>>;
+
+    /// Render the bullet to the screen.
+    fn render(&self, phi: &mut Phi);
+
+    /// Get the bounding box.
+    fn rect(&self) -> Rectangle;
+}
+
+
 #[derive(Clone, Copy)]
 struct RectBullet {
     rect: Rectangle,
@@ -40,12 +55,11 @@ impl RectBullet {
             }
         }
     }
+}
 
-    /// Update the bullet.
-    /// If the bullet should be destroyed, e.g. because it has left the screen,
-    /// then returns `None`.
-    /// Otherwise, return `Some(update_bullet)`.
-    fn update(mut self, phi: &mut Phi, dt: f64) -> Option<Self> {
+impl Bullet for RectBullet {
+
+    fn update(mut self: Box<Self>, phi: &mut Phi, dt: f64) -> Option<Box<Bullet>> {
         let (w, _) = phi.output_size();
         self.rect.x += BULLET_SPEED * dt;
 
@@ -56,8 +70,7 @@ impl RectBullet {
         }
     }
 
-    /// Render the bullet to the screen
-    fn render(self, phi: &mut Phi) {
+    fn render(&self, phi: &mut Phi) {
         phi.renderer.set_draw_color(Color::RGB(230, 230, 30));
         phi.renderer.fill_rect(self.rect.to_sdl().unwrap());
     }
@@ -179,11 +192,17 @@ struct Ship {
 }
 
 impl Ship {
-    fn spawn_bullets(&self) -> Vec<RectBullet> {
+    fn spawn_bullets(&self) -> Vec<Box<Bullet>> {
         let cannons_x = self.rect.x + 30.0;
         let cannon1_y = self.rect.y + 6.0;
         let cannon2_y = self.rect.y + SHIP_H - 10.0;
-        vec![cannon1_y, cannon2_y].iter().map(|y| RectBullet::new(cannons_x, *y)).collect()
+
+        let mut bullets: Vec<Box<Bullet>> = Vec::with_capacity(2);
+        for y in vec![cannon1_y, cannon2_y].iter() {
+            bullets.push(Box::new(RectBullet::new(cannons_x, *y)));
+        }
+
+        bullets
     }
 }
 
@@ -192,7 +211,7 @@ impl Ship {
 
 pub struct ShipView {
     player: Ship,
-    bullets: Vec<RectBullet>,
+    bullets: Vec<Box<Bullet>>,
     asteroid: Asteroid,
     bgs: BackgroundSet,
 }
@@ -281,7 +300,8 @@ impl View for ShipView {
         self.player.current = ShipFrame::from_dx_dy(dx, dy);
 
         // bullets
-        self.bullets = self.bullets.iter()
+        let old_bullets = ::std::mem::replace(&mut self.bullets, vec![]);
+        self.bullets = old_bullets.into_iter()
             .filter_map(|bullet| bullet.update(phi, elapsed))
             .collect();
 
