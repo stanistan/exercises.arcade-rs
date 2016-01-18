@@ -127,6 +127,7 @@ impl View for MainMenuView {
         }.to_sdl().unwrap());
 
         for (i, action) in self.actions.iter().enumerate() {
+
             let sprite = if self.selected as usize == i {
                 &action.hover_sprite
             } else {

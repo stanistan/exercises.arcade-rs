@@ -113,7 +113,7 @@ impl AnimatedSprite {
     }
 
     fn current_frame(&self) -> usize {
-        (self.current_time / self.frame_delay) as usize & self.frames()
+        (self.current_time / self.frame_delay) as usize % self.frames()
     }
 
 }
