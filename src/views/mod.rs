@@ -1,5 +1,12 @@
 use ::phi::{Phi, View, ViewAction};
 use ::sdl2::pixels::Color;
+use ::sdl2::rect::Rect as SdlRect;
+
+// Constants
+
+// Data Types
+
+// View definition
 
 pub struct DefaultView;
 
@@ -19,7 +26,14 @@ impl View for DefaultView {
     }
 }
 
+#[derive(Debug)]
 pub struct RGBView(u16, u16, u16);
+
+impl Drop for RGBView {
+    fn drop(&mut self) {
+        println!("Dropped view: {:?}", self);
+    }
+}
 
 impl RGBView {
 
@@ -29,7 +43,7 @@ impl RGBView {
 
     pub fn blue() -> RGBView {
         RGBView(0, 0, 255)
-    }
+   }
 
     fn next_view(&self) -> RGBView {
         let RGBView(r, g, b) = *self;
@@ -65,3 +79,29 @@ impl View for RGBView {
     }
 
 }
+
+pub struct ShipView;
+
+impl ShipView {
+    pub fn new(phi: &mut Phi) -> ShipView {
+        ShipView
+    }
+}
+
+impl View for ShipView {
+    fn render(&mut self, phi: &mut Phi, elapsed: f64) -> ViewAction {
+        if phi.events.now.quit || phi.events.now.key_escape == Some(true) {
+            return ViewAction::Quit;
+        }
+
+        // View logic here
+
+        phi.renderer.set_draw_color(Color::RGB(0, 0, 0));
+        phi.renderer.clear();
+
+        // View rendering here
+
+        ViewAction::None
+    }
+}
+

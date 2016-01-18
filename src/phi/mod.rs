@@ -91,7 +91,11 @@ where F: Fn(&mut Phi) -> Box<View> {
         match current_view.render(&mut context, elapsed) {
             ViewAction::None => context.renderer.present(),
             ViewAction::Quit => break,
-            ViewAction::ChangeView(new_view) => current_view = new_view
+            ViewAction::ChangeView(new_view) => {
+                println!("changeView.before");
+                current_view = new_view;
+                println!("changeView.after");
+            }
         }
     }
 }
