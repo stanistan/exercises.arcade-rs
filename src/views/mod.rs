@@ -26,85 +26,49 @@ impl Rectangle {
         SdlRect::new(self.x as i32, self.y as i32, self.w as u32, self.h as u32)
             .unwrap()
     }
+
+    pub fn position_right(self) -> f64 {
+        self.x + self.w
+    }
+
+    pub fn position_bottom(self) -> f64 {
+        self.y + self.h
+    }
+
+    pub fn moved(self, x: f64, y: f64) -> Rectangle {
+        Rectangle {
+            x: x, y: y, w: self.w, h: self.h
+        }
+    }
+
+    pub fn moved_by(self, dx: f64, dy: f64) -> Rectangle {
+        self.moved(self.x + dx, self.y + dy)
+    }
+
+    /// Return a (maybe moved) rectange which is contained by a `parent`
+    /// rectangle. If it can indeed be moved to fit.
+    pub fn move_inside(self, parent: Rectangle) -> Option<Rectangle> {
+        if self.w > parent.w || self.h > parent.h {
+            return None;
+        }
+
+        Some(self.moved(
+            if self.x < parent.x { parent.x }
+            else if self.position_right() >= parent.position_right() { parent.position_right() - self.w }
+            else { self. x },
+            if self.y < parent.y { parent.y }
+            else if self.position_bottom() >= parent.position_bottom() { parent.position_bottom() - self.y }
+            else { self.y }
+        ))
+    }
 }
+
 
 struct Ship {
     rect: Rectangle,
 }
 
 // View definition
-
-pub struct DefaultView;
-
-impl View for DefaultView {
-    fn render(&mut self, context: &mut Phi, _: f64) -> ViewAction {
-        let renderer = &mut context.renderer;
-        let events = &context.events;
-
-        if events.now.quit || events.now.key_escape == Some(true) {
-            return ViewAction::Quit;
-        }
-
-        renderer.set_draw_color(Color::RGB(0, 0, 0));
-        renderer.clear();
-
-        ViewAction::None
-    }
-}
-
-#[derive(Debug)]
-pub struct RGBView(u16, u16, u16);
-
-impl Drop for RGBView {
-    fn drop(&mut self) {
-        println!("Dropped view: {:?}", self);
-    }
-}
-
-impl RGBView {
-
-    pub fn red() -> RGBView {
-        RGBView(255, 0, 0)
-    }
-
-    pub fn blue() -> RGBView {
-        RGBView(0, 0, 255)
-   }
-
-    fn next_view(&self) -> RGBView {
-        let RGBView(r, g, b) = *self;
-        RGBView((r + 10) % 256, (g + 10) % 256, (b + 10) % 256)
-    }
-
-    fn color(&self) -> Color {
-        let RGBView(r, g, b) = *self;
-        Color::RGB(r as u8, g as u8, b as u8)
-    }
-
-}
-
-
-impl View for RGBView {
-
-    fn render(&mut self, context: &mut Phi, _: f64) -> ViewAction {
-        let renderer = &mut context.renderer;
-        let events = &context.events;
-
-        if events.now.quit || events.now.key_escape == Some(true) {
-            return ViewAction::Quit;
-        }
-
-        if events.now.key_space == Some(true) {
-            return ViewAction::ChangeView(Box::new(self.next_view()));
-        }
-
-        renderer.set_draw_color(self.color());
-        renderer.clear();
-
-        ViewAction::None
-    }
-
-}
 
 pub struct ShipView {
     player: Ship,
@@ -149,8 +113,7 @@ impl View for ShipView {
             _ => 0.0
         };
 
-        self.player.rect.x += dx;
-        self.player.rect.y += dy;
+        self.player.rect = self.player.rect.moved_by(dx, dy);
 
         // clear
         phi.renderer.set_draw_color(Color::RGB(0, 0, 0));
