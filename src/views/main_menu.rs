@@ -28,6 +28,7 @@ impl Action {
 
 pub struct MainMenuView {
     actions: Vec<Action>,
+    selected: i8,
 }
 
 impl MainMenuView {
@@ -41,6 +42,7 @@ impl MainMenuView {
                     ViewAction::Quit
                 })),
             ],
+            selected: 0,
         }
     }
 }
@@ -51,14 +53,41 @@ impl View for MainMenuView {
             return ViewAction::Quit;
         }
 
+        if phi.events.now.key_space == Some(true) {
+            return (self.actions[self.selected as usize].func)(phi);
+        }
+
+        if phi.events.now.key_up == Some(true) {
+            self.selected -= 1;
+            if self.selected < 0 {
+                self.selected = self.actions.len() as i8 - 1;
+            }
+        }
+
+        if phi.events.now.key_down == Some(true) {
+            self.selected += 1;
+            if self.selected >= self.actions.len() as i8 {
+                self.selected = 0;
+            }
+        }
+
         // clear the screen
         phi.renderer.set_draw_color(Color::RGB(0, 0, 0));
         phi.renderer.clear();
 
+        let (win_w, win_h) = phi.output_size();
+
         for (i, action) in self.actions.iter().enumerate() {
-            let (w, h) = action.idle_sprite.size();
-            phi.renderer.copy_sprite(&action.idle_sprite, Rectangle {
-                x: 32.0,
+            let sprite = if self.selected as usize == i {
+                &action.hover_sprite
+            } else {
+                &action.idle_sprite
+            };
+
+
+            let (w, h) = sprite.size();
+            phi.renderer.copy_sprite(&sprite, Rectangle {
+                x: (win_w - w) / 2.0,
                 y: 32.0 + 48.0 * i as f64,
                 w: w,
                 h: h,
