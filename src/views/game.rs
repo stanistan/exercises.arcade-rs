@@ -1,6 +1,7 @@
 use ::phi::{Phi, View, ViewAction};
 use ::phi::data::Rectangle;
-use ::phi::gfx::{Sprite, Background, CopySprite};
+use ::phi::gfx::{Sprite, CopySprite};
+use ::views::shared::Background;
 use ::sdl2::pixels::Color;
 
 // Constants
