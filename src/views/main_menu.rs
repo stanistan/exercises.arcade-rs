@@ -66,7 +66,8 @@ impl View for MainMenuView {
             return ViewAction::Quit;
         }
 
-        if phi.events.now.key_space == Some(true) {
+        if phi.events.now.key_space == Some(true) ||
+            phi.events.now.key_return == Some(true) {
             return (self.actions[self.selected as usize].func)(phi);
         }
 

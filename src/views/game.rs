@@ -108,8 +108,14 @@ impl ShipView {
 
 impl View for ShipView {
     fn render(&mut self, phi: &mut Phi, elapsed: f64) -> ViewAction {
-        if phi.events.now.quit || phi.events.now.key_escape == Some(true) {
+        if phi.events.now.quit {
             return ViewAction::Quit;
+        }
+
+        if phi.events.now.key_escape == Some(true) {
+            return ViewAction::ChangeView(
+                Box::new(::views::main_menu::MainMenuView::new(phi))
+            );
         }
 
         // move the ship
