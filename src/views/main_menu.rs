@@ -9,7 +9,7 @@ const FONT: &'static str = "assets/belligerent.ttf";
 
 // Types
 
-type BoxAction = Box<Fn(&mut Phi) -> ViewAction>;
+type BoxAction = Box<Fn(&mut Phi, BackgroundSet) -> ViewAction>;
 struct Action {
     func: BoxAction,
     idle_sprite: Sprite,
@@ -43,31 +43,43 @@ pub struct MainMenuView {
 
 impl MainMenuView {
     pub fn new(phi: &mut Phi) -> MainMenuView {
+        let bg = BackgroundSet::new(&mut phi.renderer);
+        MainMenuView::with_backgrounds(phi, bg)
+    }
+
+    pub fn with_backgrounds(phi: &mut Phi, bgs: BackgroundSet) -> MainMenuView {
         MainMenuView {
             actions: vec![
-                Action::new(phi, "New Game", Box::new(|phi| {
-                    ViewAction::ChangeView(Box::new(::views::game::ShipView::new(phi)))
+                Action::new(phi, "New Game", Box::new(|phi, bgs| {
+                    ViewAction::ChangeView(Box::new(::views::game::ShipView::new(phi, bgs)))
                 })),
-                Action::new(phi, "Quit", Box::new(|_| {
+                Action::new(phi, "Quit", Box::new(|_, _| {
                     ViewAction::Quit
                 })),
             ],
             selected: 0,
-            bgs: BackgroundSet::new(&mut phi.renderer),
+            bgs: bgs,
         }
+
     }
 }
 
 impl View for MainMenuView {
     fn render(&mut self, phi: &mut Phi, elapsed: f64) -> ViewAction {
 
-        if phi.events.now.quit || phi.events.now.key_escape == Some(true) {
+        if phi.events.now.quit {
             return ViewAction::Quit;
+        }
+
+        if phi.events.now.key_escape == Some(true) {
+            return ViewAction::ChangeView(Box::new(
+                ::views::game::ShipView::new(phi, self.bgs.clone())
+            ))
         }
 
         if phi.events.now.key_space == Some(true) ||
             phi.events.now.key_return == Some(true) {
-            return (self.actions[self.selected as usize].func)(phi);
+            return (self.actions[self.selected as usize].func)(phi, self.bgs.clone())
         }
 
         if phi.events.now.key_up == Some(true) {

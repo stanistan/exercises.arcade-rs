@@ -57,7 +57,7 @@ pub struct ShipView {
 }
 
 impl ShipView {
-    pub fn new(phi: &mut Phi) -> ShipView {
+    pub fn new(phi: &mut Phi, bgs: BackgroundSet) -> ShipView {
         let spritesheet = Sprite::load(&mut phi.renderer, "assets/spaceship.png").unwrap();
 
         let mut sprites = Vec::with_capacity(9);
@@ -84,7 +84,7 @@ impl ShipView {
                 sprites: sprites,
                 current: ShipFrame::MidNorm,
             },
-            bgs: BackgroundSet::new(&mut phi.renderer),
+            bgs: bgs,
         }
     }
 }
@@ -97,7 +97,7 @@ impl View for ShipView {
 
         if phi.events.now.key_escape == Some(true) {
             return ViewAction::ChangeView(
-                Box::new(::views::main_menu::MainMenuView::new(phi))
+                Box::new(::views::main_menu::MainMenuView::with_backgrounds(phi, self.bgs.clone()))
             );
         }
 
