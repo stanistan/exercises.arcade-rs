@@ -6,6 +6,29 @@ use ::sdl2::rect::Rect as SdlRect;
 
 // Data Types
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Rectangle {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
+impl Rectangle {
+    /// Generates an SDL-Compatible Rect equivalent to `self`.
+    /// Panics if it could not be created, for example,
+    /// if a coordinate to a corner overflows an `i32`.
+    pub fn to_sdl(self) -> Option<SdlRect> {
+        assert!(self.w >= 0.0 && self.h >= 0.0);
+        SdlRect::new(self.x as i32, self.y as i32, self.w as u32, self.h as u32)
+            .unwrap()
+    }
+}
+
+struct Ship {
+    rect: Rectangle,
+}
+
 // View definition
 
 pub struct DefaultView;
@@ -80,11 +103,19 @@ impl View for RGBView {
 
 }
 
-pub struct ShipView;
+pub struct ShipView {
+    player: Ship,
+}
 
 impl ShipView {
     pub fn new(phi: &mut Phi) -> ShipView {
-        ShipView
+        ShipView {
+            player: Ship {
+                rect: Rectangle {
+                    x: 64.0, y: 64.0, w: 32.0, h: 32.0,
+                }
+            }
+        }
     }
 }
 
@@ -94,12 +125,14 @@ impl View for ShipView {
             return ViewAction::Quit;
         }
 
-        // View logic here
 
+        // clear
         phi.renderer.set_draw_color(Color::RGB(0, 0, 0));
         phi.renderer.clear();
 
-        // View rendering here
+        // render scene
+        phi.renderer.set_draw_color(Color::RGB(200, 200, 50));
+        phi.renderer.fill_rect(self.player.rect.to_sdl().unwrap());
 
         ViewAction::None
     }
