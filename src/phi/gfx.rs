@@ -64,3 +64,57 @@ impl <'window> CopySprite for Renderer<'window> {
         sprite.render(self, dest);
     }
 }
+
+#[derive(Clone)]
+pub struct AnimatedSprite {
+    sprites: Vec<Sprite>,
+    frame_delay: f64,
+    current_time: f64,
+}
+
+impl AnimatedSprite {
+    pub fn new(sprites: Vec<Sprite>, frame_delay: f64) -> AnimatedSprite {
+        AnimatedSprite {
+            sprites: sprites,
+            frame_delay: frame_delay,
+            current_time: 0.0,
+        }
+    }
+
+    pub fn with_fps(sprites: Vec<Sprite>, fps: f64) -> AnimatedSprite {
+        if fps == 0.0 {
+            panic!("Passed 0 to AnimatedSprite::with_fps");
+        }
+        AnimatedSprite::new(sprites, 1.0 / fps)
+    }
+
+    pub fn frames(&self) -> usize {
+        self.sprites.len()
+    }
+
+    pub fn set_frame_delay(&mut self, frame_delay: f64) {
+        self.frame_delay = frame_delay;
+    }
+
+    pub fn set_fps(&mut self, fps: f64) {
+        if fps == 0.0 {
+            panic!("Passed 0 to AnimatedSprite::set_fps");
+        }
+        self.set_frame_delay(1.0 / fps);
+    }
+
+    pub fn add_time(&mut self, dt: f64) {
+        self.current_time += dt;
+        if self.current_time < 0.0 {
+            self.current_time = (self.frames() - 1) as f64 * self.frame_delay;
+        }
+    }
+
+    fn render(&self, renderer: &mut Renderer, dest: Rectangle) {
+        let current_frame =
+            (self.current_time / self.frame_delay) as usize % self.frames();
+        let sprite = &self.sprites[current_frame];
+        sprite.render(renderer, dest);
+    }
+
+}
