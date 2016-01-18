@@ -4,6 +4,9 @@ use ::sdl2::rect::Rect as SdlRect;
 
 // Constants
 
+/// Pixels traveled by the player's shpi every second, when moving.
+const PLAYER_SPEED: f64 = 180.0;
+
 // Data Types
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -125,6 +128,29 @@ impl View for ShipView {
             return ViewAction::Quit;
         }
 
+        // move the ship
+        let diagonal =
+            (phi.events.key_up ^ phi.events.key_down) &&
+            (phi.events.key_left ^ phi.events.key_right);
+
+        let moved =
+            if diagonal { 1.0 / 2.0f64.sqrt() }
+            else { 1.0 } * PLAYER_SPEED * elapsed;
+
+        let dx = match (phi.events.key_left, phi.events.key_right) {
+            (true, false) => -moved,
+            (false, true) => moved,
+            _ => 0.0
+        };
+
+        let dy = match (phi.events.key_up, phi.events.key_down) {
+            (true, false) => -moved,
+            (false, true) => moved,
+            _ => 0.0
+        };
+
+        self.player.rect.x += dx;
+        self.player.rect.y += dy;
 
         // clear
         phi.renderer.set_draw_color(Color::RGB(0, 0, 0));
