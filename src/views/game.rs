@@ -1,7 +1,7 @@
 use ::phi::{Phi, View, ViewAction};
 use ::phi::data::Rectangle;
 use ::phi::gfx::{Sprite, CopySprite};
-use ::views::shared::Background;
+use ::views::shared::BackgroundSet;
 use ::sdl2::pixels::Color;
 
 // Constants
@@ -53,10 +53,7 @@ struct Ship {
 
 pub struct ShipView {
     player: Ship,
-
-    bg_back: Background,
-    bg_middle: Background,
-    bg_front: Background,
+    bgs: BackgroundSet,
 }
 
 impl ShipView {
@@ -87,22 +84,7 @@ impl ShipView {
                 sprites: sprites,
                 current: ShipFrame::MidNorm,
             },
-
-            bg_back: Background {
-                pos: 0.0,
-                vel: 20.0,
-                sprite: Sprite::load(&mut phi.renderer, "assets/starBG.png").unwrap(),
-            },
-            bg_middle: Background {
-                pos: 0.0,
-                vel: 40.0,
-                sprite: Sprite::load(&mut phi.renderer, "assets/starMG.png").unwrap(),
-            },
-            bg_front: Background {
-                pos: 0.0,
-                vel: 80.0,
-                sprite: Sprite::load(&mut phi.renderer, "assets/starFG.png").unwrap(),
-            },
+            bgs: BackgroundSet::new(&mut phi.renderer),
         }
     }
 }
@@ -158,8 +140,7 @@ impl View for ShipView {
         phi.renderer.clear();
 
         // bgs
-        self.bg_back.render(&mut phi.renderer, elapsed);
-        self.bg_middle.render(&mut phi.renderer, elapsed);
+        self.bgs.render(&mut phi.renderer, elapsed);
 
         if DEBUG {
             phi.renderer.set_draw_color(Color::RGB(200, 200, 50));
@@ -172,7 +153,6 @@ impl View for ShipView {
             self.player.rect);
 
         // foreground
-        self.bg_front.render(&mut phi.renderer, elapsed);
 
         ViewAction::None
     }

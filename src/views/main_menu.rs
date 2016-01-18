@@ -1,7 +1,7 @@
 use ::phi::{Phi, View, ViewAction};
 use ::phi::data::{Rectangle};
 use ::phi::gfx::{Sprite, CopySprite};
-use ::views::shared::Background;
+use ::views::shared::BackgroundSet;
 use ::sdl2::pixels::Color;
 
 // Consts
@@ -11,20 +11,12 @@ const FONT: &'static str = "assets/belligerent.ttf";
 
 type BoxAction = Box<Fn(&mut Phi) -> ViewAction>;
 struct Action {
-    /// The function which should be executed if the action
-    /// is chosen.
     func: BoxAction,
-
-    /// The sprite which is rendered when the player does not focus
-    /// on the label.
     idle_sprite: Sprite,
-
-    /// The sprite which is rendered when the player focues.
     hover_sprite: Sprite,
 }
 
 impl Action {
-
     fn new(phi: &mut Phi, label: &'static str, func: BoxAction) -> Action {
         Action {
             func: func,
@@ -46,9 +38,7 @@ impl Action {
 pub struct MainMenuView {
     actions: Vec<Action>,
     selected: i8,
-    bg_back: Background,
-    bg_middle: Background,
-    bg_front: Background,
+    bgs: BackgroundSet,
 }
 
 impl MainMenuView {
@@ -63,29 +53,14 @@ impl MainMenuView {
                 })),
             ],
             selected: 0,
-
-            bg_back: Background {
-                pos: 0.0,
-                vel: 20.0,
-                sprite: Sprite::load(&mut phi.renderer, "assets/starBG.png").unwrap(),
-            },
-            bg_middle: Background {
-                pos: 0.0,
-                vel: 40.0,
-                sprite: Sprite::load(&mut phi.renderer, "assets/starMG.png").unwrap(),
-            },
-            bg_front: Background {
-                pos: 0.0,
-                vel: 80.0,
-                sprite: Sprite::load(&mut phi.renderer, "assets/starFG.png").unwrap(),
-            },
-
+            bgs: BackgroundSet::new(&mut phi.renderer),
         }
     }
 }
 
 impl View for MainMenuView {
     fn render(&mut self, phi: &mut Phi, elapsed: f64) -> ViewAction {
+
         if phi.events.now.quit || phi.events.now.key_escape == Some(true) {
             return ViewAction::Quit;
         }
@@ -114,9 +89,7 @@ impl View for MainMenuView {
         phi.renderer.clear();
 
         // bgs
-        self.bg_back.render(&mut phi.renderer, elapsed);
-        self.bg_middle.render(&mut phi.renderer, elapsed);
-        self.bg_front.render(&mut phi.renderer, elapsed);
+        self.bgs.render(&mut phi.renderer, elapsed);
 
         let (win_w, win_h) = phi.output_size();
         let label_h = 50.0;

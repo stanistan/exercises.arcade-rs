@@ -2,6 +2,7 @@ use ::phi::data::Rectangle;
 use ::phi::gfx::{Sprite,CopySprite};
 use ::sdl2::render::{Renderer};
 
+#[derive(Clone)]
 pub struct Background {
     pub pos: f64,
     pub vel: f64,
@@ -30,4 +31,40 @@ impl Background {
             physicall_left += size.0 * scale;
         }
     }
+}
+
+#[derive(Clone)]
+pub struct BackgroundSet {
+    pub back: Background,
+    pub middle: Background,
+    pub front: Background,
+}
+
+impl BackgroundSet {
+    pub fn new(renderer: &mut Renderer) -> BackgroundSet {
+        BackgroundSet {
+            back: Background {
+                pos: 0.0,
+                vel: 20.0,
+                sprite: Sprite::load(renderer, "assets/starBG.png").unwrap(),
+            },
+            middle: Background {
+                pos: 0.0,
+                vel: 40.0,
+                sprite: Sprite::load(renderer, "assets/starMG.png").unwrap(),
+            },
+            front: Background {
+                pos: 0.0,
+                vel: 80.0,
+                sprite: Sprite::load(renderer, "assets/starFG.png").unwrap(),
+            },
+        }
+    }
+
+    pub fn render(&mut self, renderer: &mut Renderer, elapsed: f64) {
+        self.back.render(renderer, elapsed);
+        self.middle.render(renderer, elapsed);
+        self.front.render(renderer, elapsed);
+    }
+
 }
