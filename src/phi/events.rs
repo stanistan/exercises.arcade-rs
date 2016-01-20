@@ -41,6 +41,10 @@ macro_rules! struct_events {
                 }
             }
 
+            pub fn is_key_diagonal(&self) -> bool {
+                (self.key_up ^ self.key_down) && (self.key_left ^ self.key_right)
+            }
+
             /// Update the events.
             pub fn pump(&mut self, renderer: &mut ::sdl2::render::Renderer) {
                 self.now = ImmediateEvents::new();
