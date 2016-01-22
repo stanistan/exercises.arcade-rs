@@ -12,12 +12,18 @@ pub mod gfx;
 struct_events! {
     keyboard: {
         key_escape: Escape,
+
         key_up: Up,
         key_down: Down,
         key_left: Left,
         key_right: Right,
+
         key_space: Space,
-        key_return: Return
+        key_return: Return,
+
+        key_1: Num1,
+        key_2: Num2,
+        key_3: Num3
     },
     else: {
         quit: Quit { .. }

@@ -36,6 +36,11 @@ trait Bullet {
     fn rect(&self) -> Rectangle;
 }
 
+#[derive(Clone, Copy)]
+enum CannonType {
+    RectBullet,
+}
+
 
 #[derive(Clone, Copy)]
 struct RectBullet {
@@ -189,21 +194,30 @@ struct Ship {
     rect: Rectangle,
     sprites: Vec<Sprite>,
     current: ShipFrame,
+    cannon: CannonType,
 }
 
 impl Ship {
     fn spawn_bullets(&self) -> Vec<Box<Bullet>> {
-        let cannons_x = self.rect.x + 30.0;
-        let cannon1_y = self.rect.y + 6.0;
-        let cannon2_y = self.rect.y + SHIP_H - 10.0;
+        self.new_bullets(
+            self.rect.x + 30.0,
+            vec![self.rect.y + 6.0, self.rect.y + SHIP_H - 10.0])
+    }
 
-        let mut bullets: Vec<Box<Bullet>> = Vec::with_capacity(2);
-        for y in vec![cannon1_y, cannon2_y].iter() {
-            bullets.push(Box::new(RectBullet::new(cannons_x, *y)));
+    fn new_bullets(&self, x: f64, ys: Vec<f64>) -> Vec<Box<Bullet>> {
+        let mut bullets: Vec<Box<Bullet>> = Vec::with_capacity(ys.len());
+        for y in ys.iter() {
+            bullets.push(self.new_bullet(x, *y));
         }
-
         bullets
     }
+
+    fn new_bullet(&self, x: f64, y: f64) -> Box<Bullet> {
+        Box::new(match self.cannon {
+            CannonType::RectBullet => RectBullet::new(x, y),
+        })
+    }
+
 }
 
 
@@ -243,6 +257,7 @@ impl ShipView {
                 },
                 sprites: sprites,
                 current: ShipFrame::MidNorm,
+                cannon: CannonType::RectBullet,
             },
             asteroid: Asteroid::new(phi),
             bullets: vec![],
