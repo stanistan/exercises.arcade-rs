@@ -1,6 +1,6 @@
 use ::phi::{Phi, View, ViewAction};
-use ::phi::data::Rectangle;
-use ::phi::gfx::{AnimatedSprite, Sprite, CopySprite};
+use ::phi::data::{Rectangle, MaybeAlive};
+use ::phi::gfx::{AnimatedSprite, AnimatedSpriteDescr, Sprite, CopySprite};
 use ::views::shared::BackgroundSet;
 use ::sdl2::pixels::Color;
 
@@ -8,7 +8,7 @@ use ::sdl2::pixels::Color;
 const DEBUG: bool = false;
 
 const PLAYER_SPEED: f64 = 180.0;
-
+const SHIP_PATH: &'static str = "assets/spaceship.png";
 const SHIP_W: f64 = 43.0;
 const SHIP_H: f64 = 39.0;
 
@@ -21,6 +21,15 @@ const ASTEROID_SIDE: f64 = 96.0;
 const BULLET_SPEED: f64 = 240.0;
 const BULLET_W: f64 = 8.0;
 const BULLET_H: f64 = 4.0;
+
+const EXPLOSION_PATH: &'static str = "assets/explosion.png";
+const EXPLOSIONS_WIDE: usize = 5;
+const EXPLOSIONS_HIGH: usize = 4;
+const EXPLOSIONS_TOTAL: usize = 17;
+const EXPLOSION_SIDE: f64 = 96.0;
+const EXPLOSION_FPS: f64 = 16.0;
+const EXPLOSION_DURATION: f64 = 1.0 / EXPLOSION_FPS * EXPLOSIONS_TOTAL as f64;
+
 
 trait Bullet {
     /// Update the bullet.
@@ -187,27 +196,75 @@ impl Asteroid {
         self.rect
     }
 
-    fn factory(phi: &mut Phi) -> AsteroidFactory {
-
-        let asteroid_spritesheet = Sprite::load(&mut phi.renderer, ASTEROID_PATH).unwrap();
-        let mut asteroid_sprites = Vec::with_capacity(ASTEROIDS_TOTAL);
-
-        for yth in 0..ASTEROIDS_HIGH {
-            for xth in 0..ASTEROIDS_WIDE {
-                if ASTEROIDS_WIDE * yth + xth >= ASTEROIDS_TOTAL {
-                    break;
-                }
-
-                asteroid_sprites.push(
-                    asteroid_spritesheet.region(Self::asteroid_rect(
-                        ASTEROID_SIDE * xth as f64,
-                        ASTEROID_SIDE * yth as f64
-                    )).unwrap());
-            }
+    fn sprite_descr() -> AnimatedSpriteDescr<'static> {
+        AnimatedSpriteDescr {
+            image_path: ASTEROID_PATH,
+            total_frames: ASTEROIDS_TOTAL,
+            frames_high: ASTEROIDS_HIGH,
+            frames_wide: ASTEROIDS_WIDE,
+            frame_w: ASTEROID_SIDE,
+            frame_h: ASTEROID_SIDE,
         }
+    }
 
+    fn factory(phi: &mut Phi) -> AsteroidFactory {
         AsteroidFactory {
-            sprite: AnimatedSprite::with_fps(asteroid_sprites, 1.0)
+            sprite: AnimatedSprite::load_frames_with_fps(phi, 1.0, Self::sprite_descr()),
+        }
+    }
+}
+
+struct Explosion {
+    sprite: AnimatedSprite,
+    rect: Rectangle,
+    alive_since: f64,
+}
+
+impl Explosion {
+
+    fn update(mut self, dt: f64) -> Option<Explosion> {
+        self.alive_since += dt;
+        self.sprite.add_time(dt);
+        if self.alive_since >= EXPLOSION_DURATION {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
+    fn render(&self, phi: &mut Phi) {
+        phi.renderer.copy_sprite(&self.sprite, self.rect);
+    }
+
+    fn sprite_descr() -> AnimatedSpriteDescr<'static> {
+        AnimatedSpriteDescr {
+            image_path: EXPLOSION_PATH,
+            total_frames: EXPLOSIONS_TOTAL,
+            frames_high: EXPLOSIONS_HIGH,
+            frames_wide: EXPLOSIONS_WIDE,
+            frame_w: EXPLOSION_SIDE,
+            frame_h: EXPLOSION_SIDE
+        }
+    }
+
+    fn factory(phi: &mut Phi) -> ExplosionFactory {
+        ExplosionFactory {
+            sprite: AnimatedSprite::load_frames_with_fps(phi, EXPLOSION_FPS, Self::sprite_descr())
+        }
+    }
+}
+
+struct ExplosionFactory {
+    sprite: AnimatedSprite,
+}
+
+impl ExplosionFactory {
+    fn at_center(&self, center: (f64, f64)) -> Explosion {
+        let mut sprite = self.sprite.clone();
+        Explosion {
+            sprite: sprite,
+            rect: Rectangle::with_size(EXPLOSION_SIDE, EXPLOSION_SIDE).center_at(center),
+            alive_since: 0.0
         }
     }
 }
@@ -336,12 +393,14 @@ pub struct GameView {
     bullets: Vec<Box<Bullet>>,
     asteroid_factory: AsteroidFactory,
     asteroids: Vec<Asteroid>,
+    explosion_factory: ExplosionFactory,
+    explosions: Vec<Explosion>,
     bgs: BackgroundSet,
 }
 
 impl GameView {
     pub fn new(phi: &mut Phi, bgs: BackgroundSet) -> GameView {
-        let spritesheet = Sprite::load(&mut phi.renderer, "assets/spaceship.png").unwrap();
+        let spritesheet = Sprite::load(&mut phi.renderer, SHIP_PATH).unwrap();
 
         let mut sprites = Vec::with_capacity(9);
 
@@ -370,6 +429,8 @@ impl GameView {
             },
             asteroid_factory: Asteroid::factory(phi),
             asteroids: vec![],
+            explosion_factory: Explosion::factory(phi),
+            explosions: vec![],
             bullets: vec![],
             bgs: bgs,
         }
@@ -468,6 +529,55 @@ impl View for GameView {
             .filter_map(|asteroid| asteroid.update(elapsed))
             .collect();
 
+        self.explosions = ::std::mem::replace(&mut self.explosions, vec![])
+            .into_iter()
+            .filter_map(|explosion| explosion.update(elapsed))
+            .collect();
+
+        let mut player_alive = true;
+        let mut transition_bullets: Vec<_> =
+            ::std::mem::replace(&mut self.bullets, vec![])
+            .into_iter()
+            .map(|bullet| MaybeAlive { alive: true, value: bullet })
+            .collect();
+
+        self.asteroids = ::std::mem::replace(&mut self.asteroids, vec![])
+            .into_iter()
+            .filter_map(|asteroid| {
+                // start alive
+                let mut asteroid_alive = true;
+
+                // check if we're hitting bullets
+                for bullet in &mut transition_bullets {
+                    if asteroid.rect().overlaps(bullet.value.rect()) {
+                        asteroid_alive = false;
+                        bullet.alive = false;
+                    }
+                }
+
+                if asteroid.rect().overlaps(self.player.rect) {
+                    asteroid_alive = false;
+                    player_alive = false;
+                }
+
+                if asteroid_alive {
+                    Some(asteroid)
+                } else {
+                    self.explosions.push(self.explosion_factory.at_center(asteroid.rect().center()));
+                    None
+                }
+
+            })
+            .collect();
+
+        self.bullets = transition_bullets.into_iter()
+            .filter_map(MaybeAlive::as_option)
+            .collect();
+
+        if !player_alive {
+            println!("GO HOMEEEEE");
+        }
+
         if phi.events.now.key_space == Some(true) {
             self.bullets.append(&mut self.player.spawn_bullets());
         }
@@ -501,6 +611,10 @@ impl View for GameView {
 
         for asteroid in &self.asteroids {
             asteroid.render(phi);
+        }
+
+        for explosion in &self.explosions {
+            explosion.render(phi);
         }
 
         ViewAction::None

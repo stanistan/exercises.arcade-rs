@@ -70,6 +70,32 @@ impl Rectangle {
         self.position_bottom() > other.y
     }
 
+    pub fn with_size(w: f64, h: f64) -> Rectangle {
+        Rectangle { w: w, h: h, x: 0.0, y: 0.0 }
+    }
 
+    pub fn center_at(self, center: (f64, f64)) -> Rectangle {
+        self.moved(center.0 - self.w / 2.0, center.1 - self.h / 2.0)
+    }
+
+    pub fn center(self) -> (f64, f64) {
+        (self.x + self.w / 2.0, self.y + self.h / 2.0)
+    }
 
 }
+
+pub struct MaybeAlive<T> {
+    pub alive: bool,
+    pub value: T,
+}
+
+impl <T> MaybeAlive<T> {
+    pub fn as_option(self) -> Option<T> {
+        if self.alive {
+            Some(self.value)
+        } else {
+            None
+        }
+    }
+}
+
