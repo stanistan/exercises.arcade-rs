@@ -251,9 +251,7 @@ impl ShipView {
     }
 
     fn get_distance_moved(elapsed: f64, diagonal: bool) -> f64 {
-        let moved =
-            if diagonal { 1.0 / 2.0f64.sqrt() }
-            else { 1.0 };
+        let moved = if diagonal { 1.0 / 2.0f64.sqrt() } else { 1.0 };
         moved * PLAYER_SPEED * elapsed
     }
 
@@ -269,6 +267,7 @@ impl ShipView {
         )
     }
 
+    /// Gets the delta distance given two keys being pressed, or not being pressed.
     fn d_distance(key1: bool, key2: bool, d: f64) -> f64 {
         match (key1, key2) {
             (true, false) => -d,
@@ -277,19 +276,15 @@ impl ShipView {
         }
     }
 
+    /// Gets the movable region for the window size.
+    /// This is used for bounding the player's ship.
     fn movable_region(window: (f64, f64)) -> Rectangle {
-        Rectangle {
-            x: 0.0,
-            y: 0.0,
-            w: window.0 * 0.70,
-            h: window.1
-        }
+        Rectangle { x: 0.0, y: 0.0, w: window.0 * 0.70, h: window.1 }
     }
 
+    /// Gets the next position of the player given the bounding window size.
     fn next_player_rect(&self, dx: f64, dy: f64, window: (f64, f64)) -> Option<Rectangle> {
-        self.player.rect
-            .moved_by(dx, dy)
-            .move_inside(Self::moveable_region(window))
+        self.player.rect.moved_by(dx, dy).move_inside(Self::movable_region(window))
     }
 
 }
