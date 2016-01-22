@@ -39,27 +39,51 @@ trait Bullet {
 #[derive(Clone, Copy)]
 enum CannonType {
     RectBullet,
+    SineBullet { amplitude: f64, angular_vel: f64 }
+}
+
+fn bullet_sized_rectangle(x: f64, y: f64) -> Rectangle {
+    Rectangle {
+        x: x, y: y, w: BULLET_W, h: BULLET_H,
+    }
+}
+
+#[derive(Clone,Copy)]
+struct SineBullet {
+    pos_x: f64,
+    origin_y: f64,
+    amplitude: f64,
+    angular_vel: f64,
+    total_time: f64,
+}
+
+impl Bullet for SineBullet {
+    fn update(mut self: Box<Self>, phi: &mut Phi, dt: f64) -> Option<Box<Bullet>> {
+        self.total_time += dt;
+        self.pos_x += BULLET_SPEED * dt;
+        let (w, _) = phi.output_size();
+        if self.rect().x > w {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
+    fn render(&self, phi: &mut Phi) {
+        phi.renderer.set_draw_color(Color::RGB(230, 230, 30));
+        phi.renderer.fill_rect(self.rect().to_sdl().unwrap());
+    }
+
+    fn rect(&self) -> Rectangle {
+        let dy = self.amplitude * f64::sin(self.angular_vel * self.total_time);
+        bullet_sized_rectangle(self.pos_x, self.origin_y + dy)
+    }
 }
 
 
 #[derive(Clone, Copy)]
 struct RectBullet {
     rect: Rectangle,
-}
-
-impl RectBullet {
-    /// Create a new instance given
-    /// the positoin of the rect.
-    fn new(x: f64, y: f64) -> Self {
-        RectBullet {
-            rect: Rectangle {
-                x: x,
-                y: y,
-                w: BULLET_W,
-                h: BULLET_H,
-            }
-        }
-    }
 }
 
 impl Bullet for RectBullet {
@@ -199,24 +223,39 @@ struct Ship {
 
 impl Ship {
     fn spawn_bullets(&self) -> Vec<Box<Bullet>> {
-        self.new_bullets(
-            self.rect.x + 30.0,
-            vec![self.rect.y + 6.0, self.rect.y + SHIP_H - 10.0])
-    }
+        let cannons_x = self.rect.x + 30.0;
+        let cannon1_y = self.rect.y + 6.0;
+        let cannon2_y = self.rect.y + SHIP_H - 10.0;
 
-    fn new_bullets(&self, x: f64, ys: Vec<f64>) -> Vec<Box<Bullet>> {
-        let mut bullets: Vec<Box<Bullet>> = Vec::with_capacity(ys.len());
-        for y in ys.iter() {
-            bullets.push(self.new_bullet(x, *y));
+        match self.cannon {
+            CannonType::RectBullet => vec![
+                Box::new(RectBullet {
+                    rect: bullet_sized_rectangle(cannons_x, cannon1_y)
+                }),
+                Box::new(RectBullet {
+                    rect: bullet_sized_rectangle(cannons_x, cannon2_y)
+                })
+            ],
+            CannonType::SineBullet { amplitude, angular_vel }=> vec![
+                Box::new(SineBullet {
+                    amplitude: amplitude,
+                    angular_vel: angular_vel,
+                    pos_x: cannons_x,
+                    origin_y: cannon1_y,
+                    total_time: 0.0
+                }),
+                Box::new(SineBullet {
+                    amplitude: amplitude,
+                    angular_vel: angular_vel,
+                    pos_x: cannons_x,
+                    origin_y: cannon2_y,
+                    total_time: 0.0
+                })
+            ]
         }
-        bullets
+
     }
 
-    fn new_bullet(&self, x: f64, y: f64) -> Box<Bullet> {
-        Box::new(match self.cannon {
-            CannonType::RectBullet => RectBullet::new(x, y),
-        })
-    }
 
 }
 
@@ -316,6 +355,18 @@ impl View for ShipView {
             return ViewAction::ChangeView(
                 Box::new(::views::main_menu::MainMenuView::with_backgrounds(phi, self.bgs.clone()))
             );
+        }
+
+        // change bullet type
+        if phi.events.now.key_1 == Some(true) {
+            self.player.cannon = CannonType::RectBullet;
+        }
+
+        if phi.events.now.key_2 == Some(true) {
+            self.player.cannon = CannonType::SineBullet {
+                amplitude: 10.0,
+                angular_vel: 15.0
+            };
         }
 
         // Update all the current things
