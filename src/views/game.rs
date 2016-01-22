@@ -39,7 +39,8 @@ trait Bullet {
 #[derive(Clone, Copy)]
 enum CannonType {
     RectBullet,
-    SineBullet { amplitude: f64, angular_vel: f64 }
+    SineBullet { amplitude: f64, angular_vel: f64 },
+    DivergentBullet { a: f64, b: f64 },
 }
 
 fn bullet_sized_rectangle(x: f64, y: f64) -> Rectangle {
@@ -48,7 +49,43 @@ fn bullet_sized_rectangle(x: f64, y: f64) -> Rectangle {
     }
 }
 
-#[derive(Clone,Copy)]
+struct DivergentBullet {
+    pos_x: f64,
+    origin_y: f64,
+    a: f64,
+    b: f64,
+    total_time: f64,
+}
+
+impl Bullet for DivergentBullet {
+    fn update(mut self: Box<Self>, phi: &mut Phi, dt: f64) -> Option<Box<Bullet>> {
+        self.total_time += dt;
+        self.pos_x += BULLET_SPEED * dt;
+
+        let (w, h) = phi.output_size();
+        let rect = self.rect();
+
+        if rect.x > w || rect.x < 0.0 || rect.y > h || rect.y < 0.0 {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
+    fn render(&self, phi: &mut Phi) {
+         phi.renderer.set_draw_color(Color::RGB(230, 230, 30));
+         phi.renderer.fill_rect(self.rect().to_sdl().unwrap());
+    }
+
+    fn rect(&self) -> Rectangle {
+        let dy = self.a * (
+            (self.total_time / self.b).powi(3) -
+            (self.total_time / self.b).powi(2));
+
+        bullet_sized_rectangle(self.pos_x, self.origin_y + dy)
+    }
+}
+
 struct SineBullet {
     pos_x: f64,
     origin_y: f64,
@@ -236,20 +273,36 @@ impl Ship {
                     rect: bullet_sized_rectangle(cannons_x, cannon2_y)
                 })
             ],
-            CannonType::SineBullet { amplitude, angular_vel }=> vec![
+            CannonType::SineBullet { amplitude, angular_vel } => vec![
                 Box::new(SineBullet {
                     amplitude: amplitude,
                     angular_vel: angular_vel,
                     pos_x: cannons_x,
                     origin_y: cannon1_y,
-                    total_time: 0.0
+                    total_time: 0.0,
                 }),
                 Box::new(SineBullet {
                     amplitude: amplitude,
                     angular_vel: angular_vel,
                     pos_x: cannons_x,
                     origin_y: cannon2_y,
-                    total_time: 0.0
+                    total_time: 0.0,
+                })
+            ],
+            CannonType::DivergentBullet { a, b } => vec![
+                Box::new(DivergentBullet {
+                    a: -a,
+                    b: b,
+                    pos_x: cannons_x,
+                    origin_y: cannon1_y,
+                    total_time: 0.0,
+                }),
+                Box::new(DivergentBullet {
+                    a: a,
+                    b: b,
+                    pos_x: cannons_x,
+                    origin_y: cannon2_y,
+                    total_time: 0.0,
                 })
             ]
         }
@@ -366,6 +419,13 @@ impl View for ShipView {
             self.player.cannon = CannonType::SineBullet {
                 amplitude: 10.0,
                 angular_vel: 15.0
+            };
+        }
+
+        if phi.events.now.key_3 == Some(true) {
+            self.player.cannon = CannonType::DivergentBullet {
+                a: 100.0,
+                b: 1.2,
             };
         }
 
