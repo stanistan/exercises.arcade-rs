@@ -315,15 +315,15 @@ impl Ship {
 
 // View definition
 
-pub struct ShipView {
+pub struct GameView {
     player: Ship,
     bullets: Vec<Box<Bullet>>,
     asteroid: Asteroid,
     bgs: BackgroundSet,
 }
 
-impl ShipView {
-    pub fn new(phi: &mut Phi, bgs: BackgroundSet) -> ShipView {
+impl GameView {
+    pub fn new(phi: &mut Phi, bgs: BackgroundSet) -> GameView {
         let spritesheet = Sprite::load(&mut phi.renderer, "assets/spaceship.png").unwrap();
 
         let mut sprites = Vec::with_capacity(9);
@@ -339,7 +339,7 @@ impl ShipView {
             }
         }
 
-        ShipView {
+        GameView {
             player: Ship {
                 rect: Rectangle {
                     x: 64.0,
@@ -396,7 +396,7 @@ impl ShipView {
 
 }
 
-impl View for ShipView {
+impl View for GameView {
     fn render(&mut self, phi: &mut Phi, elapsed: f64) -> ViewAction {
         // quitting quits!
         if phi.events.now.quit {
@@ -430,7 +430,7 @@ impl View for ShipView {
         }
 
         // Update all the current things
-        let (dx, dy) = ShipView::dx_dy(phi, elapsed);
+        let (dx, dy) = Self::dx_dy(phi, elapsed);
 
         // player position
         self.player.rect = self.next_player_rect(dx, dy, phi.output_size()).unwrap();

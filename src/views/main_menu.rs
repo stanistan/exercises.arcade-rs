@@ -51,7 +51,7 @@ impl MainMenuView {
         MainMenuView {
             actions: vec![
                 Action::new(phi, "New Game", Box::new(|phi, bgs| {
-                    ViewAction::ChangeView(Box::new(::views::game::ShipView::new(phi, bgs)))
+                    ViewAction::ChangeView(Box::new(::views::game::GameView::new(phi, bgs)))
                 })),
                 Action::new(phi, "Quit", Box::new(|_, _| {
                     ViewAction::Quit
@@ -73,7 +73,7 @@ impl View for MainMenuView {
 
         if phi.events.now.key_escape == Some(true) {
             return ViewAction::ChangeView(Box::new(
-                ::views::game::ShipView::new(phi, self.bgs.clone())
+                ::views::game::GameView::new(phi, self.bgs.clone())
             ))
         }
 
